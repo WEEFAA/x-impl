@@ -1,6 +1,6 @@
 ---
 name: x-plan
-description: Use when a design or spec exists and needs turning into an implementation plan, before any code is written. Produces small verifiable tasks of a few minutes each, with exact files, test-first steps, the exact command to run and the output that means it passed, saved under docs/x-impl/plans/ and handed to x-build.
+description: Use when a design or spec exists and needs turning into an implementation plan, before any code is written. Produces small verifiable tasks of a few minutes each, with exact files, test-first steps, the exact command to run and the output that means it passed, and is handed to x-build.
 user-invocable: false
 ---
 
@@ -42,7 +42,7 @@ something independently testable.
 
 ## Step 3: Write it
 
-Save to `docs/x-impl/plans/YYYY-MM-DD-<slug>.md`. A user preference overrides
+Save to `plans/YYYY-MM-DD-<slug>.md` under the project state directory printed by `sh ../x-impl/scripts/state-dir.sh` (script path relative to this skill, run from the project). A user preference overrides
 this location.
 
 ### Header

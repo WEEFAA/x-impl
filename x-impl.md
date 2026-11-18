@@ -40,6 +40,6 @@ directly override these skills. These skills in turn override your default habit
 `skills/<name>/SKILL.md` directly — that is the whole skill.
 
 **Tool names.** These skills name actions ("dispatch a subagent", "run a shell
-command"), never tools. `adapters/actions.md` defines the vocabulary;
+command"), never tools. `adapters/actions.md` inside the installed x-impl skill defines the vocabulary;
 `adapters/<harness>.md` maps each action to the tool you actually have —
 `claude.md`, `codex.md`, `opencode.md`, `openclaw.md`.

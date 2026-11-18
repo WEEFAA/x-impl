@@ -49,10 +49,7 @@ fallback: `git worktree add` through the shell tool, following
    `.agents/skills/` (or `~/.agents/skills/` with `--global`). OpenCode reads
    `.agents/skills`, `.claude/skills` and `.opencode/skills`, so one link set
    covers it alongside Codex.
-2. **Instruction file**, with `--bootstrap`. The installer copies `x-impl.md`
-   and `adapters/` into `.x-impl/` and appends one line to an existing
-   AGENTS.md: `Read .x-impl/x-impl.md for the x-impl workflow skills.`
-   OpenCode falls back to CLAUDE.md when there is no AGENTS.md.
+2. `--project DIR --bootstrap` adds a reminder to an existing AGENTS.md.
 
 A local plugin could inject the index at session start. The plugin API for that
 is version-dependent and unconfirmed here, so nothing is shipped — see

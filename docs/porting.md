@@ -13,15 +13,15 @@ only — no hook files are shipped yet.
    `x-impl` skill's own description is written so it surfaces at the start of an
    engineering task, and every other skill is reachable by name.
 2. **An instruction file** the harness always loads — AGENTS.md, CLAUDE.md, or
-   its own equivalent. Add one line pointing at `.x-impl/x-impl.md`. If the
+   its own equivalent. Add one line pointing at the installed `x-impl/SKILL.md`. If the
    harness has an include syntax, use it; if not, the line is a pointer the
    model follows with a file read.
 
 Both is better than either. Neither means the harness cannot be supported
 without the user pasting something every session, which is not support.
 
-**Plus a tool map.** Write `adapters/<harness>.md` against
-`adapters/actions.md`. The reliable way to get real tool names is to ask the
+**Plus a tool map.** Write `skills/x-impl/adapters/<harness>.md` against
+`skills/x-impl/adapters/actions.md`. The reliable way to get real tool names is to ask the
 running model to list the exact machine names of every tool it can call — not to
 assume they match a harness this one was forked from. Forks keep the syntax and
 change the semantics more often than you would like.
@@ -53,7 +53,7 @@ after every `/clear`. A session-start hook closes that gap. Nothing here needs
 one; this is reinforcement.
 
 The principle for all of them: the hook is a local script that reads
-`.x-impl/x-impl.md` and prints it as additional context. It takes no arguments,
+the installed `x-impl/SKILL.md` and prints it as additional context. It takes no arguments,
 reads no network, and writes nothing.
 
 ### Claude Code
@@ -70,7 +70,7 @@ moments context gets rebuilt:
         "hooks": [
           {
             "type": "command",
-            "command": "sh .x-impl/hooks/session-start.sh",
+            "command": "sh path/to/session-start.sh",
             "shell": "bash",
             "async": false
           }
@@ -129,21 +129,21 @@ failures per skill rather than letting one bad payload disable everything.
 ### OpenClaw
 
 Nothing needs porting here — skill discovery plus the AGENTS.md pointer already
-cover the gap a hook would close, and `adapters/openclaw.md` is written. This is
+cover the gap a hook would close, and `skills/x-impl/adapters/openclaw.md` is written. This is
 only for someone who wants the index re-injected anyway.
 
 Two mechanisms exist, and both are described rather than shipped.
 
 **The internal bootstrap hook.** An `agent:bootstrap` hook receives the list of
 workspace files about to be injected and can change it before the prompt is
-built. Adding `.x-impl/x-impl.md` to that list puts the index in context on
+built. Adding the installed `x-impl/SKILL.md` to that list puts the index in context on
 every session, the same way AGENTS.md gets there. Note that the *bundled*
 bootstrap-extra-files helper is not a route to this: it only accepts a whitelist
 of known basenames, and `x-impl.md` is not one of them. A hook of your own is
 the honest path.
 
 **A plugin `before_prompt_build` hook.** It returns context to prepend or append
-for the turn being assembled. Reading `.x-impl/x-impl.md` and returning it as
+for the turn being assembled. Reading the installed `x-impl/SKILL.md` and returning it as
 appended context is a handful of lines, and it fires on every turn rather than
 once per session — which is more than is needed and costs tokens each time.
 Gate it so it only fires when the index is not already present.

@@ -23,7 +23,7 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 cd "$ROOT"
 
 # What ships. Not .github/, not scripts/, not dist/.
-SHIP='README.md LICENSE x-impl.md install.sh adapters docs skills'
+SHIP='README.md LICENSE x-impl.md install.sh docs skills'
 
 # The commit the tag points at; fall back to HEAD when building an untagged
 # tree by hand.
@@ -62,8 +62,8 @@ PREV=$(git describe --tags --abbrev=0 --match 'v*' "$REF^" 2>/dev/null || true)
 		git log --no-merges --pretty='- %s (%h)' "$REF"
 	fi
 	printf '\n### Install\n\n'
-	printf 'Unpack the tarball and run `sh install.sh --harness all --bootstrap`\n'
-	printf 'inside the project you want the skills in.\n\n'
+	printf 'Unpack the tarball and run `sh install.sh`\n'
+	printf 'to install the skills for your user.\n\n'
 	printf 'Verify the download with `shasum -a 256 -c SHA256SUMS`.\n'
 } >"$DIST/NOTES.md"
 echo "built dist/NOTES.md${PREV:+ (since $PREV)}"

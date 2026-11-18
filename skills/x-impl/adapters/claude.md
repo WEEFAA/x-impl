@@ -52,13 +52,7 @@ Two independent paths; either is enough.
    `.claude/skills/` (or `~/.claude/skills/` with `--global`). Claude Code lists
    every installed skill's name and description, so the `x-impl` skill is
    discoverable by description alone and can be loaded with `Skill`.
-2. **Instruction file**, with `--bootstrap`. The installer copies `x-impl.md`
-   and `adapters/` into `.x-impl/` and appends a single `@.x-impl/x-impl.md`
-   line to an **existing** CLAUDE.md, which Claude Code expands inline.
-
-Claude Code reads AGENTS.md only when no CLAUDE.md exists. If the project has
-only AGENTS.md, the installer appends there and that is where Claude will read
-it; if both exist, CLAUDE.md is the one that counts.
+2. With `--project DIR --bootstrap`, an existing project instruction file also gets a reminder to load the installed skill.
 
 A `SessionStart` hook that re-injects the index after `/clear` and compaction is
 possible but is not shipped here — see `docs/porting.md`.

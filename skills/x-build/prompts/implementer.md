@@ -1,7 +1,7 @@
 # Implementer prompt template
 
 Fill in the placeholders and dispatch a fresh subagent with this as its whole
-brief. Set the model explicitly — see `adapters/<harness>.md`.
+brief. Set the model explicitly — see the installed x-impl skill’s `adapters/<harness>.md`.
 
 ```
 You are implementing Task [N]: [TASK_NAME].

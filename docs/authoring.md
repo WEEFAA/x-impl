@@ -81,7 +81,7 @@ request" because that is the moment it fires.
 Skill bodies name **actions**: "dispatch a subagent", "track a todo list",
 "load skill x-plan", "run a shell command", "create a worktree". Never a tool
 name — no `Task`, no `bash`, no `TodoWrite`. The vocabulary is in
-`adapters/actions.md`; the per-harness mapping is in `adapters/<harness>.md`.
+`skills/x-impl/adapters/actions.md`; the per-harness mapping is in `skills/x-impl/adapters/<harness>.md`.
 
 This is what lets one skill body run on three harnesses unchanged. If you find
 yourself wanting to name a tool, either the action vocabulary is missing a word

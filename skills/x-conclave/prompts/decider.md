@@ -1,7 +1,7 @@
 # Decider prompt template
 
 Fill in the placeholders and dispatch a high-reasoning decider with this as its
-whole brief. See `adapters/<harness>.md` for how that dispatch is spelled on
+whole brief. See the installed x-impl skill’s `adapters/<harness>.md` for how that dispatch is spelled on
 your harness, and set the strongest model and reasoning effort explicitly.
 
 ```

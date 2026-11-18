@@ -76,14 +76,15 @@ They are deciding how to land the work; they should see what is in it.
 Use the base from the build handoff, or resolve the requested range for a
 standalone review. Set `BASE_SHA` to its base and `HEAD_SHA` to its tip (the
 current HEAD for landing). Include the requirements, Review focus and ledger
-rulings when available.
+rulings when available. Resolve `../x-impl/scripts/state-dir.sh` relative to
+this skill and run it via `sh` from the project to obtain `STATE_DIR`.
 
 ```sh
-mkdir -p .x-impl/run
+REVIEW_DIFF=$(mktemp "$STATE_DIR/review.XXXXXX")
 { git log --oneline "$BASE_SHA..$HEAD_SHA"
   git diff --stat "$BASE_SHA..$HEAD_SHA"
   git diff -U10 "$BASE_SHA..$HEAD_SHA"
-} > .x-impl/run/review-$(date +%s).diff
+} > "$REVIEW_DIFF"
 ```
 
 Use the commit the work actually started from. `HEAD~1` silently drops every

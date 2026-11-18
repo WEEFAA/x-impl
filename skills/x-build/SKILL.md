@@ -62,9 +62,10 @@ Say which mode you are in and why, in one line. Then stay in it.
 
 Before the first task, in per-task and inline mode:
 
-1. Create `.x-impl/run/<plan-slug>/progress.md`, first line
-   `# x-impl ledger — plan: <plan path>`. Make sure `.x-impl/run/` is
-   gitignored.
+1. From the project, run the installed `../x-impl/scripts/state-dir.sh` through `sh`
+   (resolve the script relative to this skill). Keep the ledger at
+   `<state>/run/<plan-slug>/progress.md`, alongside this run’s briefs and reports.
+   For an existing run, resume at its original ledger path.
 2. If a ledger for this plan already exists, every task with a
    `Task N: complete` line is done — resume at the first one without it, and
    trust the ledger and `git log` over your own memory.

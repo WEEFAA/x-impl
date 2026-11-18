@@ -1,7 +1,7 @@
 # Reviewer prompt template
 
 One brief, two scopes. Pick the scope, fill in the placeholders, and dispatch a
-fresh subagent. Set the model explicitly — see `adapters/<harness>.md`.
+fresh subagent. Set the model explicitly — see the installed x-impl skill’s `adapters/<harness>.md`.
 
 - **Per-task scope** — one task's diff, during the build loop. Scale the model
   to the diff's size and risk; a small mechanical change does not need the

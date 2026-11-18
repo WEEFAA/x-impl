@@ -182,29 +182,38 @@ smoke() {
 	cd "$proj"
 
 	git init -q .
+	git -c user.name=Smoke -c user.email=smoke@example.invalid commit -qm baseline --allow-empty || return 1
 	printf '# AGENTS\n' >AGENTS.md
 	printf '# CLAUDE\n' >CLAUDE.md
 
-	sh "$ROOT/install.sh" --harness all --bootstrap >>"$smoke_log" 2>&1 || return 1
+	sh "$ROOT/install.sh" --project "$proj" --harness all --bootstrap >>"$smoke_log" 2>&1 || return 1
 
 	[ -d .claude/skills/x-impl ] || { echo "no .claude/skills/x-impl" >>"$smoke_log"; return 1; }
 	[ -d .agents/skills/x-impl ] || { echo "no .agents/skills/x-impl" >>"$smoke_log"; return 1; }
-	[ -f .x-impl/x-impl.md ] || { echo "no .x-impl/x-impl.md" >>"$smoke_log"; return 1; }
+	[ ! -e .x-impl ] || return 1
+	for adapter in claude codex opencode openclaw; do
+		[ -f ".agents/skills/x-impl/adapters/$adapter.md" ] || return 1
+	done
+	state=$(X_IMPL_STATE_DIR="$SMOKE_DIR/state" sh .agents/skills/x-impl/scripts/state-dir.sh) || return 1
+	[ -d "$state" ] || return 1
+	git worktree add --detach "$SMOKE_DIR/worktree" HEAD >>"$smoke_log" 2>&1 || return 1
+	from_tree=$(cd "$SMOKE_DIR/worktree" && X_IMPL_STATE_DIR="$SMOKE_DIR/state" sh "$ROOT/skills/x-impl/scripts/state-dir.sh") || return 1
+	[ "$state" = "$from_tree" ] || return 1
 	grep -qF '<!-- x-impl -->' CLAUDE.md || { echo "no pointer in CLAUDE.md" >>"$smoke_log"; return 1; }
 	grep -qF '<!-- x-impl -->' AGENTS.md || { echo "no pointer in AGENTS.md" >>"$smoke_log"; return 1; }
 
-	before=$(find .claude .agents .x-impl -print | sort)
+	before=$(find .claude .agents -print | sort)
 	claude_md_before=$(cat CLAUDE.md)
 	agents_md_before=$(cat AGENTS.md)
 
-	sh "$ROOT/install.sh" --harness all --bootstrap >>"$smoke_log" 2>&1 || return 1
+	sh "$ROOT/install.sh" --project "$proj" --harness all --bootstrap >>"$smoke_log" 2>&1 || return 1
 
-	after=$(find .claude .agents .x-impl -print | sort)
+	after=$(find .claude .agents -print | sort)
 	[ "$before" = "$after" ] || { echo "second install changed the tree" >>"$smoke_log"; return 1; }
 	[ "$claude_md_before" = "$(cat CLAUDE.md)" ] || { echo "CLAUDE.md gained a second pointer" >>"$smoke_log"; return 1; }
 	[ "$agents_md_before" = "$(cat AGENTS.md)" ] || { echo "AGENTS.md gained a second pointer" >>"$smoke_log"; return 1; }
 
-	sh "$ROOT/install.sh" --harness all --bootstrap --uninstall >>"$smoke_log" 2>&1 || return 1
+	sh "$ROOT/install.sh" --project "$proj" --harness all --bootstrap --uninstall >>"$smoke_log" 2>&1 || return 1
 
 	for leftover in .claude/skills/x-impl .agents/skills/x-impl .x-impl/x-impl.md; do
 		if [ -e "$leftover" ]; then

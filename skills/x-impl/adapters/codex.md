@@ -76,11 +76,7 @@ BRANCH=$(git branch --show-current)
 1. **Skill discovery.** `install.sh` links each `skills/x-*` directory into
    `.agents/skills/` (or `~/.agents/skills/` with `--global`), which Codex reads
    natively.
-2. **Instruction file**, with `--bootstrap`. The installer copies `x-impl.md`
-   and `adapters/` into `.x-impl/` and appends one line to an existing
-   AGENTS.md: `Read .x-impl/x-impl.md for the x-impl workflow skills.`
-   Codex has no `@`-include, so this is a pointer the model follows, not an
-   inline expansion.
+2. `--project DIR --bootstrap` adds a reminder to an existing AGENTS.md.
 
 AGENTS.md is capped around 32 KiB. The appended line is one line; keep it that
 way rather than inlining the index.

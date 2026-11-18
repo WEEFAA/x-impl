@@ -63,7 +63,7 @@ move on.
 The decider answers. The user is interrupted only where the call is theirs.
 
 **Dispatch the decider** with `prompts/decider.md` filled in — a high-reasoning
-subagent, model and effort set explicitly (see `adapters/<harness>.md`). Hand it
+subagent, model and effort set explicitly (see the installed x-impl skill’s `adapters/<harness>.md`). Hand it
 the batch as a file path where your harness allows it, so the questions do not
 also sit in your context.
 
@@ -126,7 +126,7 @@ Both modes produce the same two things.
 
 ### The design doc
 
-Save to `docs/x-impl/designs/YYYY-MM-DD-<slug>.md`. A user preference for
+Save to `designs/YYYY-MM-DD-<slug>.md` under the project state directory printed by `sh ../x-impl/scripts/state-dir.sh` (script path relative to this skill, run from the project). A user preference for
 another location overrides this.
 
 Cover: intent and why; goals, non-goals, anti-goals; constraints; the approaches

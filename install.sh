@@ -5,7 +5,7 @@
 #                 [--harness claude|codex|opencode|openclaw|all]
 #                 [--copy] [--bootstrap] [--uninstall] [--dry-run]
 #
-# Defaults: --project "$PWD", --harness all, symlink mode. A project-scope
+# Defaults: --global, --harness all, symlink mode. A project-scope
 # install that includes OpenClaw copies into .agents/skills instead of linking,
 # because OpenClaw skips symlinks that leave the workspace.
 #
@@ -66,99 +66,101 @@ remote_install() {
 		fi
 	}
 
+	download_release() {
+		if have sha256sum; then
+			SHACMD='sha256sum'
+		elif have shasum; then
+			SHACMD='shasum -a 256'
+		else
+			die "need sha256sum or shasum to verify the download"
+		fi
+
+		TARBALL=x-impl-$TAG.tar.gz
+		BASE=https://github.com/$REPO/releases/download/$TAG
+
+		say "x-impl $TAG: downloading from $REPO"
+		fetch "$BASE/$TARBALL" "$TMP/$TARBALL" || die "could not download $TARBALL from $REPO $TAG"
+		fetch "$BASE/SHA256SUMS" "$TMP/SHA256SUMS" || die "could not download SHA256SUMS from $REPO $TAG"
+
+		expected=$(awk -v f="$TARBALL" '
+			{ sub(/^\*/, "", $2) }
+			$2 == f { print $1; exit }
+		' "$TMP/SHA256SUMS")
+		[ -n "$expected" ] || die "SHA256SUMS has no entry for $TARBALL"
+		actual=$(cd "$TMP" && $SHACMD "$TARBALL" | awk '{ print $1 }')
+		if [ "$expected" != "$actual" ]; then
+			die "checksum mismatch for $TARBALL
+	       expected $expected
+	       got      $actual
+	       Nothing was installed."
+		fi
+		say "checksum ok"
+
+		mkdir -p "$TMP/unpack"
+		tar -xzf "$TMP/$TARBALL" -C "$TMP/unpack" || die "could not unpack $TARBALL"
+		[ -d "$TMP/unpack/x-impl-$TAG/skills" ] ||
+			die "$TARBALL does not look like an x-impl release"
+
+	}
+
 	TAG=${X_IMPL_VERSION:-}
 	if [ -z "$TAG" ]; then
 		TAG=$(latest_tag || true)
 	fi
-	case $TAG in
-	'' | */* | *' '*)
-		die "could not resolve a release for $REPO (does one exist?). Pin one with X_IMPL_VERSION=vX.Y.Z"
-		;;
-	esac
-
-	if have sha256sum; then
-		SHACMD='sha256sum'
-	elif have shasum; then
-		SHACMD='shasum -a 256'
-	else
-		die "need sha256sum or shasum to verify the download"
-	fi
-
 	TMP=$(mktemp -d "${TMPDIR:-/tmp}/x-impl-dl.XXXXXX") || die "could not create a temp directory"
 	trap 'rm -rf "$TMP"' EXIT HUP INT TERM
-
-	TARBALL=x-impl-$TAG.tar.gz
-	BASE=https://github.com/$REPO/releases/download/$TAG
-
-	say "x-impl $TAG: downloading from $REPO"
-	fetch "$BASE/$TARBALL" "$TMP/$TARBALL" || die "could not download $TARBALL from $REPO $TAG"
-	fetch "$BASE/SHA256SUMS" "$TMP/SHA256SUMS" || die "could not download SHA256SUMS from $REPO $TAG"
-
-	expected=$(awk -v f="$TARBALL" '
-		{ sub(/^\*/, "", $2) }
-		$2 == f { print $1; exit }
-	' "$TMP/SHA256SUMS")
-	[ -n "$expected" ] || die "SHA256SUMS has no entry for $TARBALL"
-	actual=$(cd "$TMP" && $SHACMD "$TARBALL" | awk '{ print $1 }')
-	if [ "$expected" != "$actual" ]; then
-		die "checksum mismatch for $TARBALL
-       expected $expected
-       got      $actual
-       Nothing was installed."
-	fi
-	say "checksum ok"
-
-	mkdir -p "$TMP/unpack"
-	tar -xzf "$TMP/$TARBALL" -C "$TMP/unpack" || die "could not unpack $TARBALL"
-	[ -d "$TMP/unpack/x-impl-$TAG/skills" ] ||
-		die "$TARBALL does not look like an x-impl release"
+	case $TAG in
+	'' | */*)
+		[ -z "${X_IMPL_VERSION:-}" ] || die "invalid release tag"
+		have git || die "install Git to install before the first release"
+		# Only use master when the repository actually has no release tags.
+		if git ls-remote --exit-code --refs "https://github.com/$REPO" 'refs/tags/v*' >/dev/null; then
+			die "could not resolve the latest release; pin one with X_IMPL_VERSION"
+		else
+			[ "$?" -eq 2 ] || die "could not read release tags from $REPO"
+		fi
+		git clone --quiet --depth 1 --branch master "https://github.com/$REPO" "$TMP/source" || die "could not download master"
+		TAG=$(git -C "$TMP/source" rev-parse HEAD)
+		payload=$TMP/source
+		;;
+	v[0-9]*)
+		case $TAG in *[!A-Za-z0-9.-]*) die "invalid release tag" ;; esac
+		download_release
+		payload=$TMP/unpack/x-impl-$TAG
+		;;
+	*) die "invalid release tag: $TAG" ;;
+	esac
 
 	dest=$HOME_DIR/releases/$TAG
 	mkdir -p "$HOME_DIR/releases"
-	rm -rf "$dest"
-	mv "$TMP/unpack/x-impl-$TAG" "$dest"
-
-	# current/ is what the installed symlinks resolve through, so pointing it
-	# at the new release is the upgrade.
-	link=$HOME_DIR/current
-	[ -L "$link" ] || rm -rf "$link"
-	ln -sfn "$dest" "$link" 2>/dev/null || { rm -f "$link" && ln -s "$dest" "$link"; }
-	say "unpacked $dest"
-
-	# A piped run has no meaningful project directory, so --global is the
-	# default here. --project DIR still works.
-	scope_given=0
-	for a in "$@"; do
-		case $a in
-		--project | --global) scope_given=1 ;;
-		esac
-	done
-
-	say ""
-	if [ "$scope_given" -eq 1 ]; then
-		sh "$link/install.sh" "$@"
-		uninstall_args=$*
-	else
-		sh "$link/install.sh" --global "$@"
-		if [ $# -gt 0 ]; then uninstall_args="--global $*"; else uninstall_args=--global; fi
+	if [ ! -e "$dest" ]; then
+		mv "$payload" "$dest"
+	elif [ ! -f "$dest/install.sh" ] || [ ! -d "$dest/skills" ]; then
+		die "existing download directory is incomplete: $dest"
 	fi
-
-	say ""
-	say "x-impl $TAG installed."
-	say "  release    $dest"
-	say "  current    $link -> releases/$TAG"
-	say "  uninstall  sh $link/install.sh $uninstall_args --uninstall"
-	say "             rm -rf $HOME_DIR    # afterwards, to drop the download too"
+	link=$HOME_DIR/current
+	if [ -e "$link" ] && [ ! -L "$link" ]; then die "expected a managed symlink at $link"; fi
+	ln -sfn "$dest" "$link"
+	sh "$link/install.sh" "$@"
+	say "Installed from $dest"
 	exit 0
 }
 
-if [ -f "$0" ] && [ -d "$SRC/skills" ]; then
-	: # a checkout or an unpacked release: carry on below
-else
-	remote_install "$@"
-fi
-
-SCOPE=project
+usage() {
+	cat <<EOF
+Usage: sh install.sh [options]
+  --global        Install for the current user (default).
+  --project DIR   Install skills in one project's harness directories.
+  --harness NAME  claude, codex, opencode, openclaw, or all (default).
+  --copy          Copy instead of linking. Project OpenClaw skills always copy.
+  --bootstrap     With --project DIR, remind sessions to load the installed skill.
+                  Skills and adapters are already available without this flag.
+  --uninstall     Remove managed skills and startup reminders in this scope.
+  --dry-run       Preview the installation or removal without writing files.
+  -h, --help      Show this help.
+EOF
+}
+SCOPE=global
 ROOT=$PWD
 HARNESS=all
 MODE=link
@@ -166,27 +168,6 @@ MODE_EXPLICIT=0
 BOOTSTRAP=0
 UNINSTALL=0
 DRYRUN=0
-
-usage() {
-	cat <<EOF
-x-impl installer
-
-Usage: sh install.sh [options]
-
-  --project DIR   install into DIR (default: current directory)
-  --global        install into the per-user skill directories instead
-  --harness NAME  claude | codex | opencode | openclaw | all  (default: all)
-  --copy          copy the skills instead of symlinking them
-                  (forced for .agents/skills in a project-scope OpenClaw
-                  install, which is what --harness openclaw and --harness all
-                  both are)
-  --bootstrap     also install .x-impl/ and add one pointer line to an
-                  existing CLAUDE.md or AGENTS.md
-  --uninstall     remove what this installer created, and nothing else
-  --dry-run       print what would happen, change nothing
-  -h, --help      this message
-EOF
-}
 
 # run CMD... : execute, or print it under --dry-run
 run() {
@@ -229,6 +210,29 @@ case $HARNESS in
 claude | codex | opencode | openclaw | all) ;;
 *) die "unknown harness: $HARNESS" ;;
 esac
+
+if [ "$BOOTSTRAP" -eq 1 ] && [ "$SCOPE" != project ]; then
+	die "--bootstrap needs --project DIR to identify the instruction file"
+fi
+if [ "$SCOPE" = project ] && [ ! -d "$ROOT" ]; then die "no such project directory: $ROOT"; fi
+
+if [ ! -f "$0" ] || [ ! -d "$SRC/skills" ]; then
+	if [ "$DRYRUN" -eq 1 ]; then
+		say "Preview: scope=$SCOPE project=$ROOT harness=$HARNESS mode=$MODE bootstrap=$BOOTSTRAP uninstall=$UNINSTALL"
+		exit 0
+	fi
+	set -- "--$SCOPE"
+	if [ "$SCOPE" = project ]; then set -- "$@" "$ROOT"; fi
+	set -- "$@" --harness "$HARNESS"
+	if [ "$MODE_EXPLICIT" -eq 1 ]; then set -- "$@" --copy; fi
+	if [ "$BOOTSTRAP" -eq 1 ]; then set -- "$@" --bootstrap; fi
+	if [ "$UNINSTALL" -eq 1 ]; then
+		link=${X_IMPL_HOME:-$HOME/.x-impl}/current
+		[ -f "$link/install.sh" ] || die "no downloaded installer at $link"
+		exec sh "$link/install.sh" "$@" --uninstall
+	fi
+	remote_install "$@"
+fi
 
 if [ "$SCOPE" = project ]; then
 	[ -d "$ROOT" ] || die "no such directory: $ROOT"
@@ -292,6 +296,10 @@ install_skill() {
 				say "ok       $dest (already linked)"
 				return 0
 			fi
+			if [ "$current" != "$src" ]; then
+				say "SKIP     $dest links to another installation; leaving it alone"
+				return 0
+			fi
 			run rm -f "$dest"
 		elif [ -d "$dest" ] && [ -f "$dest/.x-impl-copy" ]; then
 			# our own copy: replace it wholesale, so a re-run picks up
@@ -351,7 +359,7 @@ append_pointer() {
 	file=$1
 	line=$2
 
-	if [ -f "$file" ] && grep -qF "$MARKER" "$file" 2>/dev/null; then
+	if [ -f "$file" ] && grep -qxF "$line $MARKER" "$file"; then
 		say "ok       $file already has the x-impl pointer"
 		return 0
 	fi
@@ -361,6 +369,7 @@ append_pointer() {
 		return 0
 	fi
 
+	strip_pointer "$file"
 	# keep a blank line between the pointer and whatever came before
 	if [ -s "$file" ]; then
 		printf '\n' >>"$file"
@@ -380,22 +389,16 @@ strip_pointer() {
 	fi
 
 	tmp=$file.x-impl.tmp
-	grep -vF "$MARKER" "$file" >"$tmp"
+	sed '/<!-- x-impl -->/d' "$file" >"$tmp"
 	mv "$tmp" "$file"
 	say "removed  pointer from $file"
 }
 
 install_bootstrap() {
-	run mkdir -p "$BOOT_DIR"
-	run cp "$SRC/x-impl.md" "$BOOT_DIR/x-impl.md"
-	run rm -rf "$BOOT_DIR/adapters"
-	run cp -R "$SRC/adapters" "$BOOT_DIR/adapters"
-	[ "$DRYRUN" -eq 1 ] || say "installed $BOOT_DIR"
-
 	claude_md=$ROOT/CLAUDE.md
 	agents_md=$ROOT/AGENTS.md
-	claude_line='@.x-impl/x-impl.md'
-	agents_line='Read .x-impl/x-impl.md for the x-impl workflow skills.'
+	claude_line='Load the installed x-impl skill at the start of engineering tasks.'
+	agents_line=$claude_line
 
 	print_claude=0
 	print_agents=0
@@ -463,13 +466,13 @@ uninstall_bootstrap() {
 
 # --- main ------------------------------------------------------------------
 
-targets=''
-if [ "$want_claude" -eq 1 ]; then targets="$targets $CLAUDE_SKILLS"; fi
-if [ "$want_agents" -eq 1 ]; then targets="$targets $AGENTS_SKILLS"; fi
+set --
+if [ "$want_claude" -eq 1 ]; then set -- "$@" "$CLAUDE_SKILLS"; fi
+if [ "$want_agents" -eq 1 ]; then set -- "$@" "$AGENTS_SKILLS"; fi
 
 if [ "$UNINSTALL" -eq 1 ]; then
 	say "x-impl uninstall  root=$ROOT  harness=$HARNESS"
-	for destdir in $targets; do
+	for destdir do
 		[ -d "$destdir" ] || continue
 		skill_dirs | while IFS= read -r src; do
 			uninstall_skill "$destdir" "$(basename "$src")"
@@ -495,7 +498,7 @@ fi
 count=$(skill_dirs | wc -l | tr -d ' ')
 [ "$count" -gt 0 ] || die "no skills found under $SRC/skills"
 
-for destdir in $targets; do
+for destdir do
 	if [ "$destdir" = "$AGENTS_SKILLS" ]; then
 		MODE=$AGENTS_MODE
 	else
@@ -511,4 +514,4 @@ if [ "$BOOTSTRAP" -eq 1 ]; then
 	install_bootstrap
 fi
 
-say "done. $count skills."
+say "Ready. Start a new harness session and ask it to use x-impl."

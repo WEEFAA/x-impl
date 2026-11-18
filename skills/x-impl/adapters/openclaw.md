@@ -98,9 +98,7 @@ after the step 0 detection.
    and loads one by reading that location. The user can name `$x-impl`
    directly; the other skills carry `user-invocable: false`, so OpenClaw does
    not resolve `$x-conclave` and the like from the user.
-2. **Instruction file**, with `--bootstrap`. The installer copies `x-impl.md`
-   and `adapters/` into `.x-impl/` and appends one line to an existing
-   AGENTS.md: `Read .x-impl/x-impl.md for the x-impl workflow skills.`
+2. `--project DIR --bootstrap` adds a reminder to an existing AGENTS.md.
 
 A watcher picks up new and changed skills on the next turn, so neither an
 install nor an edit needs a restart.
@@ -136,7 +134,7 @@ OpenClaw has two places the index could be re-injected: an internal
 needed — skill discovery plus the AGENTS.md pointer already cover it — and
 nothing is shipped here. The shapes are in `docs/porting.md`. Note that the
 bundled bootstrap-extra-files mechanism accepts only a whitelist of basenames,
-so it will not pick up `.x-impl/x-impl.md`.
+so it will not pick up `the installed x-impl index`.
 
 ## Telemetry
 
