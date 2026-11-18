@@ -4,6 +4,86 @@ A local, agent-agnostic engineering workflow harness. Eight skills, a
 bootstrap index, a per-harness tool adapter, and a shell installer. It runs on
 Claude Code, Codex CLI, OpenCode and OpenClaw, and it talks to nothing.
 
+## Philosophy
+
+**A thread you follow, not a cage.** These skills describe how work goes well.
+They do not seize control of the session, and nothing here shouts at the model
+to make it comply.
+
+**An index, not orders.** The bootstrap lists what exists and when each thing is
+useful. Picking the right one is still a judgement call.
+
+**User instructions win.** AGENTS.md, CLAUDE.md, and anything the user asks for
+directly override these skills. The skills in turn override default habits.
+Nothing here owns someone else's process.
+
+**Actions, not tools.** Skill bodies say "dispatch a subagent" and "run a shell
+command". `adapters/<harness>.md` maps those to the tools a given harness
+actually has. One skill body, four harnesses, no edits.
+
+**Evidence before claims.** Nothing is done, fixed or passing until the command
+that proves it has been run in this turn and its output read. A subagent's
+report is a claim; a green run from an hour ago proves the tree it ran on.
+
+## The pipeline
+
+```
+x-conclave → x-plan → x-build → x-land
+```
+
+Join it wherever the work starts; skip what does not apply.
+
+| Skill | For |
+|---|---|
+| `x-impl` | The index itself, as a loadable skill. |
+| `x-conclave` | Settling an open-ended design — autonomously, or by grilling you. |
+| `x-plan` | Turning a design into small verifiable tasks. |
+| `x-build` | Isolating the workspace and running the work: per task, inline, or several independent problems in parallel. |
+| `x-tdd` | Red / green / refactor. |
+| `x-debug` | Root cause before fixes. |
+| `x-answer` | Handling review feedback technically. |
+| `x-land` | Verifying, reviewing, and landing the work. |
+
+`x-impl` is the only skill you invoke yourself. The other seven carry
+`user-invocable: false`: the model loads them when the work calls for them, but
+they are not slash commands. Claude Code and OpenClaw enforce this. OpenCode
+ignores the flag, and Codex has no equivalent, so there they stay reachable by
+name.
+
+`x-tdd` and `x-debug` are what `x-build` uses inside each task. `x-answer`
+handles whatever a review sends back, from a reviewer subagent, a colleague, or
+a PR thread. For a review without a landing, ask for a review only; `x-land` then runs its
+review step alone.
+
+### The conclave
+
+`x-conclave` is the piece that differs most from a normal design interview. A
+closed council: the questions get deliberated privately, and the session comes
+back out with decisions.
+
+The session model builds the decision tree, resolves one branch at a time, looks
+the facts up — facts are never asked — and drafts every question with real
+options and a recommendation. Then one of two things happens.
+
+**Auto, the default.** The answers come from a **decider**: a subagent pinned to
+the strongest reasoning configuration available, returning an answer, a
+rationale, a confidence level, and an escalate flag. Only six things get
+escalated: irreversible or outward-facing work, spending money, security and
+privacy, genuinely ambiguous intent, a conflict with an explicit instruction,
+and the decider's own low confidence. Escalations go out once, as a batch, at
+the end, each as a yes/no or a pick-one with the recommendation first. Zero
+escalations means the session does not stop at all. When nobody can answer, it
+proceeds on the recommendation and tags the row `ASSUMED`, which `x-land`
+re-surfaces before anything outward-facing.
+
+**Interactive.** Ask to be grilled and you answer every question yourself, one
+at a time, each with the recommendation attached. Same tree, same log — it is
+simply auto mode with every question escalated.
+
+Either way it ends in a design doc with a decision log, and a `Decided by`
+column saying which rows were yours. Overriding one row reopens only that
+branch.
+
 ## Install
 
 Copy this command to install for your user across all four harnesses:
@@ -87,86 +167,6 @@ curl -fsSL https://raw.githubusercontent.com/WEEFAA/x-impl/master/install.sh | s
 ```
 
 Global installs link into `~/.agents/skills/`. Project installs copy into `.agents/skills/` so the skill and its adapters stay inside the workspace. If you use a skill allowlist, include the installed `x-*` names. [Harness details](skills/x-impl/adapters/openclaw.md).
-
-## Philosophy
-
-**A thread you follow, not a cage.** These skills describe how work goes well.
-They do not seize control of the session, and nothing here shouts at the model
-to make it comply.
-
-**An index, not orders.** The bootstrap lists what exists and when each thing is
-useful. Picking the right one is still a judgement call.
-
-**User instructions win.** AGENTS.md, CLAUDE.md, and anything the user asks for
-directly override these skills. The skills in turn override default habits.
-Nothing here owns someone else's process.
-
-**Actions, not tools.** Skill bodies say "dispatch a subagent" and "run a shell
-command". `adapters/<harness>.md` maps those to the tools a given harness
-actually has. One skill body, four harnesses, no edits.
-
-**Evidence before claims.** Nothing is done, fixed or passing until the command
-that proves it has been run in this turn and its output read. A subagent's
-report is a claim; a green run from an hour ago proves the tree it ran on.
-
-## The pipeline
-
-```
-x-conclave → x-plan → x-build → x-land
-```
-
-Join it wherever the work starts; skip what does not apply.
-
-| Skill | For |
-|---|---|
-| `x-impl` | The index itself, as a loadable skill. |
-| `x-conclave` | Settling an open-ended design — autonomously, or by grilling you. |
-| `x-plan` | Turning a design into small verifiable tasks. |
-| `x-build` | Isolating the workspace and running the work: per task, inline, or several independent problems in parallel. |
-| `x-tdd` | Red / green / refactor. |
-| `x-debug` | Root cause before fixes. |
-| `x-answer` | Handling review feedback technically. |
-| `x-land` | Verifying, reviewing, and landing the work. |
-
-`x-impl` is the only skill you invoke yourself. The other seven carry
-`user-invocable: false`: the model loads them when the work calls for them, but
-they are not slash commands. Claude Code and OpenClaw enforce this. OpenCode
-ignores the flag, and Codex has no equivalent, so there they stay reachable by
-name.
-
-`x-tdd` and `x-debug` are what `x-build` uses inside each task. `x-answer`
-handles whatever a review sends back, from a reviewer subagent, a colleague, or
-a PR thread. For a review without a landing, ask for a review only; `x-land` then runs its
-review step alone.
-
-### The conclave
-
-`x-conclave` is the piece that differs most from a normal design interview. A
-closed council: the questions get deliberated privately, and the session comes
-back out with decisions.
-
-The session model builds the decision tree, resolves one branch at a time, looks
-the facts up — facts are never asked — and drafts every question with real
-options and a recommendation. Then one of two things happens.
-
-**Auto, the default.** The answers come from a **decider**: a subagent pinned to
-the strongest reasoning configuration available, returning an answer, a
-rationale, a confidence level, and an escalate flag. Only six things get
-escalated: irreversible or outward-facing work, spending money, security and
-privacy, genuinely ambiguous intent, a conflict with an explicit instruction,
-and the decider's own low confidence. Escalations go out once, as a batch, at
-the end, each as a yes/no or a pick-one with the recommendation first. Zero
-escalations means the session does not stop at all. When nobody can answer, it
-proceeds on the recommendation and tags the row `ASSUMED`, which `x-land`
-re-surfaces before anything outward-facing.
-
-**Interactive.** Ask to be grilled and you answer every question yourself, one
-at a time, each with the recommendation attached. Same tree, same log — it is
-simply auto mode with every question escalated.
-
-Either way it ends in a design doc with a decision log, and a `Decided by`
-column saying which rows were yours. Overriding one row reopens only that
-branch.
 
 ## Privacy
 
