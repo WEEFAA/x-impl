@@ -1,16 +1,13 @@
 ---
 description: High-reasoning decision agent for x-impl's x-conclave skill. Answers drafted design questions with a rationale, a confidence level, and an escalate flag.
 mode: subagent
-# Replace with the strongest model id your OpenCode install has configured.
-model: anthropic/claude-opus-5-5
-temperature: 0.2
-tools:
-  read: true
-  grep: true
-  glob: true
-  write: false
-  edit: false
-  bash: false
+# Before enabling this agent, select a configured model and reasoning variant.
+# model: provider/model-id#variant
+permissions:
+  - { action: "*", resource: "*", effect: deny }
+  - { action: read, resource: "*", effect: allow }
+  - { action: grep, resource: "*", effect: allow }
+  - { action: glob, resource: "*", effect: allow }
 ---
 
 You are the decider for an x-impl conclave. You do not build anything and you

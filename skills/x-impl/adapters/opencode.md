@@ -17,7 +17,7 @@ your actual tool list first; this table covers both.
 | dispatch a subagent | `task` with `subagent_type` | `subagent` with `agent` |
 | dispatch a high-reasoning decider | `task` with a `decider` agent | `subagent` with `agent: "decider"` |
 | track a todo list | `todowrite` | no todo tool — use a scratch markdown file |
-| create a worktree | `git worktree add` via the shell tool | same |
+| create a worktree | Git via the shell | Code Mode worktree tools when exposed, otherwise Git |
 
 ## The decider
 
@@ -25,12 +25,15 @@ your actual tool list first; this table covers both.
 the agent definition, not from the dispatch call, so the decider is a named
 agent with a pinned model rather than a per-call override.
 
-Copy `adapters/opencode/decider.md` to `.opencode/agents/decider.md` (or the
-global agents directory) and set its `model:` to the strongest model you have
-configured. Then dispatch it by name and hand it
+To enable the dedicated decider on OpenCode V2, copy the bundled
+`adapters/opencode/decider.md` into your OpenCode agents directory. Set
+`model:` to a reasoning model and variant available through your provider.
+On V1, replace the template's `permissions` list with the V1 frontmatter
+mapping `permission: {"*": deny, read: allow, grep: allow, glob: allow}`.
+Dispatch the configured agent by name with
 `skills/x-conclave/prompts/decider.md` filled in.
 
-**No `decider` agent defined, or no subagent tool:** run the decider pass
+**No explicit decider model, agent, or dispatch tool:** run the decider pass
 inline, separately labelled, with the same
 answer/rationale/confidence/escalate contract, and note in the design doc that
 it ran inline. Do not silently fall back to a general subagent on the session
@@ -38,10 +41,9 @@ model — that is the questioner grading its own questions.
 
 ## Worktrees
 
-OpenCode has no native worktree tool, so `x-build`'s Isolate step takes the git
-fallback: `git worktree add` through the shell tool, following
-`skills/x-build/references/isolate.md`. Detect an existing linked worktree first
-(`git rev-parse --git-dir` against `--git-common-dir`).
+Follow **Isolate** in the installed `x-build` skill. Reuse an existing linked
+worktree. If one is needed, prefer the session's native worktree capability
+when available, otherwise use the skill's Git fallback.
 
 ## How the bootstrap gets loaded
 

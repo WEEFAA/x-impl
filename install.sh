@@ -103,6 +103,7 @@ remote_install() {
 
 	}
 
+	actual=''
 	TAG=${X_IMPL_VERSION:-}
 	if [ -z "$TAG" ]; then
 		TAG=$(latest_tag || true)
@@ -131,7 +132,7 @@ remote_install() {
 	*) die "invalid release tag: $TAG" ;;
 	esac
 
-	dest=$HOME_DIR/releases/$TAG
+	dest=$HOME_DIR/releases/$TAG${actual:+-$actual}
 	mkdir -p "$HOME_DIR/releases"
 	if [ ! -e "$dest" ]; then
 		mv "$payload" "$dest"

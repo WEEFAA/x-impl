@@ -158,7 +158,7 @@ Installs in `~/.agents/skills/`. Project installs use `.agents/skills/`. [Harnes
 curl -fsSL https://raw.githubusercontent.com/WEEFAA/x-impl/master/install.sh | sh -s -- --harness opencode
 ```
 
-Uses the same `.agents/skills/` location as Codex. For a dedicated design decider, copy the installed `x-impl/adapters/opencode/decider.md` into your OpenCode agents directory and set its model. [Harness details](skills/x-impl/adapters/opencode.md).
+Uses the same `.agents/skills/` location as Codex. Design decisions run inline until you configure a dedicated decider with your chosen reasoning model. [Decider setup for your OpenCode version](skills/x-impl/adapters/opencode.md#the-decider).
 
 ### OpenClaw
 

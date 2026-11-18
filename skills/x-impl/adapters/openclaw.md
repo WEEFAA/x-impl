@@ -80,10 +80,9 @@ Two routes, and `x-build`'s Isolate step prefers the first.
 before the child's first turn and cleans it up afterwards. This only helps when
 the isolated work is going to a child anyway.
 
-**In this session:** there is no tool that gives the *current* session a
-worktree, so take the git fallback in
-`skills/x-build/references/isolate.md` — `git worktree add` through `exec`,
-after the step 0 detection.
+**In this session:** follow **Isolate** in the installed `x-build` skill.
+Check for an existing worktree first. When a new one is needed for the
+current session, use its Git fallback through `exec`.
 
 ## How the bootstrap gets loaded
 
